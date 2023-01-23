@@ -3,21 +3,57 @@
 #include <string.h>
 #include <sys/stat.h>
 
-void getstr(char *dest) {
-    scanf("%s", dest) ;
+void getstr(char *dest, int n) {
+    scanf("%s", dest + n) ;
 }
 
-void invalid_command() {
-    printf("invalid command\n") ;
+void getname_withspace(char *dest) {
+    strcpy(dest, "root/") ;
     char c ;
-    while((c = getchar()) != '\n') ;
+    int i = 0 ;
+    scanf("%c", &c) ;
+    while(c != '\"') {
+        dest[i + 5] = c ;
+        i++ ;
+        scanf("%c", &c) ;
+    }
+}
+
+int invalid_command() {
+    char fileatr[100] = {0} ;
+    getstr(fileatr, 0) ;
+    if(strcmp(fileatr, "--file")){
+        printf("invalid command\n") ;
+        char c ;
+        while((c = getchar()) != '\n') ;
+        return 1 ;
+    }
+    else
+        return 0 ;
+}
+
+int iswithspace() {
+    int i ;
+    char crstr[100] = {0} ;
+    
+    getchar() ;
+    i = 0 ;
+    scanf("%c", &crstr[0]) ;
+    while(crstr[i] != '/') {
+        i++ ;
+        scanf("%c", &crstr[i]) ;
+    }
+    if(!(strcmp(crstr, "root/")))
+        return 0 ;
+    else
+        return 1 ;
 }
 
 void crfile_withoutspace() {
     //printf("ok") ;
     int slashcounter = 0, i, j, flag ;
     char wsname[100], completename[100] = "root/", dirname[100] = "root/" ;
-    getstr(wsname) ;
+    getstr(wsname, 0) ;
     for(i = 0 ; wsname[i] != '\0' ; i++)
         if(wsname[i] == '/')
             slashcounter++ ;
@@ -91,39 +127,57 @@ void crfile_withspace() {
 }
 
 void createfile() {
-    int i ;
-    char fileatr[100] = {0}, crstr[100] = {0} ;
-    //printf("ok2\n") ;
-    getstr(fileatr) ;
-    if (strcmp(fileatr, "--file"))
-        invalid_command() ;
+    if (invalid_command()) ;
     else {
-        getchar() ;
-        i = 0 ;
-        scanf("%c", &crstr[0]) ;
-        while(crstr[i] != '/') {
-            i++ ;
-            scanf("%c", &crstr[i]) ;
-        }
-        if((strcmp(crstr, "root/")) && (strcmp(crstr, "\"root/")))
-            invalid_command() ;
-        else if(!(strcmp(crstr, "root/")))
-            crfile_withoutspace() ;
-        else
+        if(iswithspace())
             crfile_withspace() ;
+        else
+            crfile_withoutspace() ;
+    }
+}
+
+void cat() {
+    char completename[100] = {0}, linestr[1000] = {0} ;
+    if (invalid_command()) ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+        //puts(completename) ;
+        FILE *myfile ;
+        myfile = fopen(completename, "r") ;
+        if(!myfile)
+            printf("file doesn't exist!\n") ;
+        else {
+            char c ;
+            while(!feof(myfile)) {
+                c = fgetc(myfile) ;
+                printf("%c", c) ;
+            }
+            printf("\n") ;
+        }
+        fclose(myfile) ;
     }
 }
 
 int main () {
     char command[100] ;
     while(1) {
-        getstr(command) ;
+        getstr(command, 0) ;
         if (!strcmp(command, "createfile")) 
             createfile() ;
+        else if(!strcmp(command, "cat"))
+            cat() ;
         else if(!strcmp(command, "exit")) 
             break ;
-        else 
-            invalid_command() ;
+        else {
+            printf("invalid command\n") ;
+            char c ;
+            while((c = getchar()) != '\n') ;
+        }
     }
     return 0 ;
 }
