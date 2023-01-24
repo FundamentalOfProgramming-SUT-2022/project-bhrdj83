@@ -19,10 +19,33 @@ void getname_withspace(char *dest) {
     }
 }
 
-int invalid_command() {
+void getstr_withspace(char *dest) {
+    char c ;
+    int i = 0 ;
+    scanf("%c", &c) ;
+    while(c != '\"' || dest[i - 1] == '\\') {
+        dest[i] = c ;
+        i++ ;
+        scanf("%c", &c) ;
+    }
+}
+
+int invalid_command(int mode) {
+    int v ;
     char fileatr[100] = {0} ;
     getstr(fileatr, 0) ;
-    if(strcmp(fileatr, "--file")){
+    switch(mode) {
+        case 1 :
+            v = strcmp(fileatr, "--file") ;
+            break ;
+        case 2 :
+            v = strcmp(fileatr, "--str") ;
+            break ;
+        case 3 :
+            v = strcmp(fileatr, "--pos") ;
+            break ;
+    }
+    if(v){
         printf("invalid command\n") ;
         char c ;
         while((c = getchar()) != '\n') ;
@@ -47,6 +70,13 @@ int iswithspace() {
         return 0 ;
     else
         return 1 ;
+}
+
+char str_space() {
+    char c ;
+    getchar() ;
+    scanf("%c", &c) ;
+    return c ;
 }
 
 void crfile_withoutspace() {
@@ -127,7 +157,7 @@ void crfile_withspace() {
 }
 
 void createfile() {
-    if (invalid_command()) ;
+    if (invalid_command(1)) ;
     else {
         if(iswithspace())
             crfile_withspace() ;
@@ -136,9 +166,27 @@ void createfile() {
     }
 }
 
+void write_str(FILE *file, char *string) {
+    int i = 0 ;
+    while(string[i] != 0) {
+        if(string[i] == '\\') {
+            i++ ;
+            if(string[i] == 'n')
+                putc('\n', file) ;
+            else if(string[i] == '\"')
+                putc('\"', file) ;
+            else
+                putc('\\', file) ;
+        }
+        else
+            putc(string[i], file) ;
+        i++ ;
+    }
+}
+
 void cat() {
     char completename[100] = {0}, linestr[1000] = {0} ;
-    if (invalid_command()) ;
+    if (invalid_command(1)) ;
     else {
         if(iswithspace()) 
             getname_withspace(completename) ;
@@ -163,6 +211,86 @@ void cat() {
     }
 }
 
+void insert() {
+    char completename[100] = {0}, str[1000] = {0}, c ;
+    char *before = (char*)calloc(1000000, sizeof(char)) ;
+    char *after = (char*)calloc(1000000, sizeof(char)) ;
+    int linepose, charpose, i, j ;
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    if(invalid_command(2))
+        return ;
+    else {
+        if((c = str_space()) == '\"'){
+            getstr_withspace(str) ;
+        }
+        else {
+            str[0] = c ;
+            getstr(str, 1) ;
+        }
+    }
+    if(invalid_command(3))
+        return ;
+    else {
+        scanf("%d:%d", &linepose, &charpose) ;
+    }
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist!\n") ;
+        fclose(myfile) ;
+        return ;
+    }
+    i = 1 ;
+    j = 0 ;
+    while(i < linepose) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            printf("invalid line position") ;
+            return ;
+        }
+        before[j] = c ;
+        j++ ;
+        if(c == '\n')
+            i++ ;
+        
+    }
+    for(i = 0 ; i < charpose ; i++) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            printf("invalid line position") ;
+            return ;
+        }
+        if(c == '\n') {
+            printf("invalid character position") ;
+            return ;
+        }
+        before[j] = c ;
+        j++ ;
+    }
+    i = 0 ;
+    while(!feof(myfile)) {
+        c = fgetc(myfile) ;
+        after[i] = c ;
+        i++ ;
+    }
+    fclose(myfile) ;
+    myfile = fopen(completename, "w") ;
+    fprintf(myfile, "%s", before) ;
+    write_str(myfile, str) ;
+    fprintf(myfile, "%s", after) ;
+    fclose(myfile) ;
+    printf("file updated successfuly!\n") ;
+}
+
 int main () {
     char command[100] ;
     while(1) {
@@ -171,6 +299,8 @@ int main () {
             createfile() ;
         else if(!strcmp(command, "cat"))
             cat() ;
+        else if(!strcmp(command, "insertstr"))
+            insert() ;
         else if(!strcmp(command, "exit")) 
             break ;
         else {
