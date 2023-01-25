@@ -242,7 +242,8 @@ void cat() {
 }
 
 void insert() {
-    char completename[100] = {0}, str[1000] = {0}, c ;
+    char completename[100] = {0}, c ;
+    char *str = (char*)calloc(1000000, sizeof(char)) ;
     char *before = (char*)calloc(1000000, sizeof(char)) ;
     char *after = (char*)calloc(1000000, sizeof(char)) ;
     int linepose, charpose, i, j ;
@@ -633,6 +634,104 @@ void pastestr() {
     printf("file updated successfuly!\n") ;
 }
 
+void compare() {
+    char name1[100] = {0}, name2[100] = {0}, line1[1000] = {0}, line2[1000] = {0} ;
+    int line_counter = 0, firstline, lastline, i ;
+    if(iswithspace()) 
+        getname_withspace(name1) ;
+    else{
+        strcpy(name1, "root/") ;
+        getstr(name1, 5) ;
+    }
+    if(iswithspace()) 
+        getname_withspace(name2) ;
+    else{
+        strcpy(name2, "root/") ;
+        getstr(name2, 5) ;
+    }
+    FILE *file1 ;
+    FILE *file2 ;
+    file1 = fopen(name1, "r") ;
+    file2 = fopen(name2, "r") ;
+    if(!file1) {
+        printf("file1 doesn't exist\n") ;
+        fclose(file1) ;
+        fclose(file2) ;
+        return ;
+    }
+    if(!file2) {
+        printf("file2 doesn't exist\n") ;
+        fclose(file1) ;
+        fclose(file2) ;
+        return ;
+    }
+    /*fgets(line1, 1000, file1) ;
+    fgets(line2, 1000, file2) ;*/
+    while(!feof(file1) && !feof(file2)) {
+        fgets(line1, 1000, file1) ;
+        fgets(line2, 1000, file2) ;
+        line_counter++ ;
+        if(strcmp(line1, line2)) {
+            printf("============ #%d ============\n", line_counter) ;
+            printf("%s", line1) ;
+            printf("%s", line2) ;
+        }
+        memset(line1, 0, sizeof(line1)) ;
+        memset(line2, 0, sizeof(line2)) ;
+        /*fgets(line1, 1000, file1) ;
+        fgets(line2, 1000, file2) ;*/
+    }
+    printf("\n") ;
+    if(!feof(file1)) {
+        fclose(file2) ;
+        firstline = line_counter + 1 ;
+        while(!feof(file1)) {
+            line_counter++ ;
+            fgets(line1,1000, file1) ;
+        }
+        lastline = line_counter ;
+        fclose(file1) ;
+        file1 = fopen(name1, "r") ;
+        for(i = 1 ; i < firstline ; i++)
+            fgets(line1, 1000, file1) ;
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n", firstline, lastline) ;
+        memset(line1, 0, sizeof(line1)) ;
+        //fgets(line1, 1000, file1) ;
+        while(!feof(file1)) {
+            fgets(line1, 1000, file1) ;
+            printf("%s", line1) ;
+            memset(line1, 0, sizeof(line1)) ;
+            //fgets(line1, 1000, file1) ;
+        }
+        printf("\n") ;
+        fclose(file1) ;
+    }
+    else if(!feof(file2)) {
+        fclose(file1) ;
+        firstline = line_counter + 1 ;
+        while(!feof(file2)) {
+            line_counter++ ;
+            fgets(line2,1000, file2) ;
+        }
+        lastline = line_counter ;
+        fclose(file2) ;
+        file2 = fopen(name2, "r") ;
+        for(i = 1 ; i < firstline ; i++)
+            fgets(line2, 1000, file2) ;
+        printf("<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n", firstline, lastline) ;
+        memset(line2, 0, sizeof(line2)) ;
+        //fgets(line2, 1000, file2) ;
+        while(!feof(file2)) {
+            fgets(line2, 1000, file2) ;
+            printf("%s", line2) ;
+            memset(line2, 1000, sizeof(line2)) ;
+            //fgets(line2, 1000, file2) ;
+        }
+        printf("\n") ;
+        fclose(file2) ;
+    }
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -652,6 +751,8 @@ int main () {
             cutstr() ;
         else if(!strcmp(command, "pastestr"))
             pastestr() ;
+        else if(!strcmp(command, "compare"))
+            compare() ;
         else if(!strcmp(command, "exit")) 
             break ;
         else {
