@@ -55,6 +55,34 @@ int invalid_command(int mode) {
         return 0 ;
 }
 
+int Flag(int mode) {
+    int i ;
+    char flagname[100] = {0} ;
+    getstr(flagname, 0) ;
+    switch(mode) {
+        case 1 :
+            if(strcmp(flagname, "-size")){
+                printf("invalid flag") ;
+                return 0 ;
+            }
+            else {
+                scanf("%d", &i) ;
+                return i ;
+            }
+            break ;
+        case 2 :
+            if(!strcmp(flagname, "-f"))
+                return 1 ;
+            else if(!strcmp(flagname, "-b"))
+                return -1 ;
+            else {
+                printf("invalid flag") ;
+                return 0 ;
+            }
+            break ;
+    }
+}
+
 int iswithspace() {
     int i ;
     char crstr[100] = {0} ;
@@ -254,8 +282,14 @@ void insert() {
     while(i < linepose) {
         c = fgetc(myfile) ;
         if(feof(myfile)) {
-            printf("invalid line position") ;
-            return ;
+            if(i == linepose - 1 && charpose == 0){
+                before[j] = '\n' ;
+                break ;
+            }
+            else {
+                printf("invalid line position\n") ;
+                return ;
+            }
         }
         before[j] = c ;
         j++ ;
@@ -266,21 +300,22 @@ void insert() {
     for(i = 0 ; i < charpose ; i++) {
         c = fgetc(myfile) ;
         if(feof(myfile)) {
-            printf("invalid line position") ;
+            printf("invalid character position\n") ;
             return ;
         }
         if(c == '\n') {
-            printf("invalid character position") ;
+            printf("invalid character position\n") ;
             return ;
         }
         before[j] = c ;
         j++ ;
     }
     i = 0 ;
+    c = fgetc(myfile) ;
     while(!feof(myfile)) {
-        c = fgetc(myfile) ;
         after[i] = c ;
         i++ ;
+        c = fgetc(myfile) ;
     }
     fclose(myfile) ;
     myfile = fopen(completename, "w") ;
@@ -289,6 +324,110 @@ void insert() {
     fprintf(myfile, "%s", after) ;
     fclose(myfile) ;
     printf("file updated successfuly!\n") ;
+}
+
+int removefunc(char *completename, int linepose, int charpose, int rmsize, int direction) {
+    char *before = (char*)calloc(1000000, sizeof(char)) ;
+    char *after = (char*)calloc(1000000, sizeof(char)) ;
+    int i, j, beforecounter = 0 ;
+    char c ;
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist!\n") ;
+        fclose(myfile) ;
+        return 0 ;
+    }
+    i = 1 ;
+    j = 0 ;
+    while(i < linepose) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            if(i == linepose - 1 && charpose == 0){
+                before[j] = '\n' ;
+                beforecounter++ ;
+                break ;
+            }
+            else {
+                printf("invalid line position\n") ;
+                return 0 ;
+            }
+        }
+        before[j] = c ;
+        beforecounter++ ;
+        j++ ;
+        if(c == '\n')
+            i++ ;
+        
+    }
+    for(i = 0 ; i < charpose ; i++) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            printf("invalid character position\n") ;
+            return 0 ;
+        }
+        if(c == '\n') {
+            printf("invalid character position\n") ;
+            return 0 ;
+        }
+        before[j] = c ;
+        beforecounter++ ;
+        j++ ;
+    }
+    i = 0 ;
+    c = fgetc(myfile) ;
+    while(!feof(myfile)) {
+        after[i] = c ;
+        i++ ;
+        c = fgetc(myfile) ;
+    }
+    fclose(myfile) ;
+    /*if(direction == 1) {
+        for(i = 0 ; after[i] != 0 ; i++)
+            after[i] = after[i + rmsize] ;
+    }*/
+    if(direction == -1) {
+        for(i = beforecounter - 1 ; i >= beforecounter - rmsize ; i--)
+            before[i] = 0 ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", before) ;
+        fprintf(myfile, "%s", after) ;
+        fclose(myfile) ;
+    }
+    else {
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", before) ;
+        fprintf(myfile, "%s", after + rmsize) ;
+        fclose(myfile) ;
+    }
+    return 1 ;
+
+}
+
+void removestr() {
+    char completename[100] = {0} ;
+    int linepose, charpose, i, j, rmsize, direction ;
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    if(invalid_command(3))
+        return ;
+    else {
+        scanf("%d:%d", &linepose, &charpose) ;
+    }
+    if((rmsize = Flag(1)) == 0)
+        return ;
+    if((direction = Flag(2)) == 0)
+        return ;
+    if(removefunc(completename, linepose, charpose, rmsize, direction))
+        printf("removed string from file successfuly!\n") ;
 }
 
 int main () {
@@ -301,6 +440,8 @@ int main () {
             cat() ;
         else if(!strcmp(command, "insertstr"))
             insert() ;
+        else if(!strcmp(command, "removestr")) 
+            removestr() ;
         else if(!strcmp(command, "exit")) 
             break ;
         else {
