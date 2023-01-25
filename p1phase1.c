@@ -3,6 +3,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+char *clipboard ;
+
 void getstr(char *dest, int n) {
     scanf("%s", dest + n) ;
 }
@@ -430,8 +432,210 @@ void removestr() {
         printf("removed string from file successfuly!\n") ;
 }
 
+int copyfunc(char *completename, int linepose, int charpose, int cpsize, int direction) {
+    char *before = (char*)calloc(1000000, sizeof(char)) ;
+    char *after = (char*)calloc(1000000, sizeof(char)) ;
+    int i, j, beforecounter = 0 ;
+    char c ;
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist!\n") ;
+        fclose(myfile) ;
+        return 0 ;
+    }
+    i = 1 ;
+    j = 0 ;
+    while(i < linepose) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            if(i == linepose - 1 && charpose == 0){
+                before[j] = '\n' ;
+                beforecounter++ ;
+                break ;
+            }
+            else {
+                printf("invalid line position\n") ;
+                return 0 ;
+            }
+        }
+        before[j] = c ;
+        beforecounter++ ;
+        j++ ;
+        if(c == '\n')
+            i++ ;
+        
+    }
+    for(i = 0 ; i < charpose ; i++) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            printf("invalid character position\n") ;
+            return 0 ;
+        }
+        if(c == '\n') {
+            printf("invalid character position\n") ;
+            return 0 ;
+        }
+        before[j] = c ;
+        beforecounter++ ;
+        j++ ;
+    }
+    i = 0 ;
+    c = fgetc(myfile) ;
+    while(!feof(myfile)) {
+        after[i] = c ;
+        i++ ;
+        c = fgetc(myfile) ;
+    }
+    fclose(myfile) ;
+    memset(clipboard, 0, sizeof(clipboard)) ;
+    //puts(clipboard) ;
+    if(direction == 1) {
+        for(i = 0 ; i < cpsize ; i++) {
+            clipboard[i] = after[i] ;
+        }
+    }
+    else {
+        for(i = 0 ; i < cpsize ; i++ ) {
+            clipboard[i] = before[beforecounter - cpsize + i] ;
+        }
+    }
+    //printf("%c\n", clipboard[10]) ;
+    return 1 ;
+}
+
+void copystr() {
+    char completename[100] = {0} ;
+    int linepose, charpose, i, j, cpsize, direction ;
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    if(invalid_command(3))
+        return ;
+    else {
+        scanf("%d:%d", &linepose, &charpose) ;
+    }
+    if((cpsize = Flag(1)) == 0)
+        return ;
+    if((direction = Flag(2)) == 0)
+        return ;
+    if(copyfunc(completename, linepose, charpose, cpsize, direction))
+        printf("copied string successfuly!\n") ;
+}
+
+void cutstr() {
+    char completename[100] = {0} ;
+    int linepose, charpose, i, j, cpsize, direction ;
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    if(invalid_command(3))
+        return ;
+    else {
+        scanf("%d:%d", &linepose, &charpose) ;
+    }
+    if((cpsize = Flag(1)) == 0)
+        return ;
+    if((direction = Flag(2)) == 0)
+        return ;
+    if(copyfunc(completename, linepose, charpose, cpsize, direction))
+        if(removefunc(completename, linepose, charpose, cpsize, direction))
+            printf("cut string from file successfuly!\n") ;
+}
+
+void pastestr() {
+    char completename[100] = {0}, c ;
+    char *before = (char*)calloc(1000000, sizeof(char)) ;
+    char *after = (char*)calloc(1000000, sizeof(char)) ;
+    int linepose, charpose, i, j ;
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    if(invalid_command(3))
+        return ;
+    else {
+        scanf("%d:%d", &linepose, &charpose) ;
+    }
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist!\n") ;
+        fclose(myfile) ;
+        return ;
+    }
+    i = 1 ;
+    j = 0 ;
+    while(i < linepose) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            if(i == linepose - 1 && charpose == 0){
+                before[j] = '\n' ;
+                break ;
+            }
+            else {
+                printf("invalid line position\n") ;
+                return ;
+            }
+        }
+        before[j] = c ;
+        j++ ;
+        if(c == '\n')
+            i++ ;
+        
+    }
+    for(i = 0 ; i < charpose ; i++) {
+        c = fgetc(myfile) ;
+        if(feof(myfile)) {
+            printf("invalid character position\n") ;
+            return ;
+        }
+        if(c == '\n') {
+            printf("invalid character position\n") ;
+            return ;
+        }
+        before[j] = c ;
+        j++ ;
+    }
+    i = 0 ;
+    c = fgetc(myfile) ;
+    while(!feof(myfile)) {
+        after[i] = c ;
+        i++ ;
+        c = fgetc(myfile) ;
+    }
+    fclose(myfile) ;
+    myfile = fopen(completename, "w") ;
+    fprintf(myfile, "%s", before) ;
+    write_str(myfile, clipboard) ;
+    fprintf(myfile, "%s", after) ;
+    fclose(myfile) ;
+    printf("file updated successfuly!\n") ;
+}
+
 int main () {
     char command[100] ;
+    clipboard = (char*)calloc(1000000, sizeof(char)) ;
     while(1) {
         getstr(command, 0) ;
         if (!strcmp(command, "createfile")) 
@@ -442,6 +646,12 @@ int main () {
             insert() ;
         else if(!strcmp(command, "removestr")) 
             removestr() ;
+        else if(!strcmp(command, "copystr")) 
+            copystr() ;
+        else if(!strcmp(command, "cutstr"))
+            cutstr() ;
+        else if(!strcmp(command, "pastestr"))
+            pastestr() ;
         else if(!strcmp(command, "exit")) 
             break ;
         else {
