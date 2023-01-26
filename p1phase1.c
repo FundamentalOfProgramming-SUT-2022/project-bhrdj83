@@ -109,10 +109,27 @@ char str_space() {
     return c ;
 }
 
+void undofunc(char *completename) {
+    char undocompletename[100] = {0}, c;
+    strcpy(undocompletename, completename) ;
+    memcpy(undocompletename, "undo/", 5) ;
+    FILE *currentfile ;
+    FILE *backup ;
+    currentfile = fopen(completename, "r") ;
+    backup = fopen(undocompletename, "w") ;
+    c = fgetc(currentfile) ;
+    while(!feof(currentfile)) {
+        fputc(c, backup) ;
+        c = fgetc(currentfile) ;
+    }
+    fclose(currentfile) ;
+    fclose(backup) ;
+}
+
 void crfile_withoutspace() {
     //printf("ok") ;
     int slashcounter = 0, i, j, flag ;
-    char wsname[100], completename[100] = "root/", dirname[100] = "root/" ;
+    char wsname[100], completename[100] = "root/", dirname[100] = "root/", undocompletename[100] = "undo/", undodirname[100] = "undo/" ;
     getstr(wsname, 0) ;
     for(i = 0 ; wsname[i] != '\0' ; i++)
         if(wsname[i] == '/')
@@ -123,34 +140,46 @@ void crfile_withoutspace() {
             if (wsname[j] == '/'){
                 if(++flag >= i + 1)
                     break ;
-                else
+                else{
                     dirname[j + 5] = wsname[j] ;
+                    undodirname[j + 5] = wsname[j] ;
+                }
             }
-            else
+            else {
                 dirname[j + 5] = wsname[j] ;
+                undodirname[j + 5] = wsname[j] ;
+            }
         }
         mkdir(dirname) ;
+        mkdir(undodirname) ;
         strcpy(dirname, "root/") ;
+        strcpy(dirname, "undo/") ;
     }
-    for(i = 0 ; wsname[i] != '\0' ; i++)
+    for(i = 0 ; wsname[i] != '\0' ; i++) {
         completename[i + 5] = wsname[i] ;
+        undocompletename[i + 5] = wsname[i] ;
+    }
     FILE *newfile ;
+    FILE *oldfile ;
     if(newfile = fopen(completename, "r")) {
         printf("file already exists!\n") ;
     }
     else {
         newfile = fopen(completename, "w") ;
+        oldfile = fopen(undocompletename, "w") ;
         printf("new file created successfuly!\n") ;
+        fclose(oldfile) ;
     }
     fclose(newfile) ;
 }
 
 void crfile_withspace() {
-    char c, completename[100] = "root/", dirname[100] = {0} ;
+    char c, completename[100] = "root/", dirname[100] = {0}, undocompletename[100] = "undo/", undodirname[100] = {0} ;
     int i = 0, slashcounter = 0, flag, j ;
     scanf("%c", &c) ;
     while(c != '\"') {
         completename[i + 5] = c ;
+        undocompletename[i + 5] = c ;
         if(c == '/')
             slashcounter++ ;
         i++ ;
@@ -167,21 +196,29 @@ void crfile_withspace() {
             if (completename[j] == '/'){
                 if(++flag >= i + 1)
                     break ;
-                else
+                else {
                     dirname[j] = completename[j] ;
+                    undodirname[j] = undocompletename[j] ;
+                }
             }
-            else
+            else {
                 dirname[j] = completename[j] ;
+                undodirname[j] = undocompletename[j] ;
+            }
         }
         mkdir(dirname) ;
+        mkdir(undodirname) ;
     }
     FILE *newfile ;
+    FILE *oldfile ;
     if(newfile = fopen(completename, "r")) {
         printf("file already exists!\n") ;
     }
     else {
         newfile = fopen(completename, "w") ;
+        oldfile = fopen(undocompletename, "w") ;
         printf("new file created successfuly!\n") ;
+        fclose(oldfile) ;
     }
     fclose(newfile) ;
 }
@@ -273,6 +310,7 @@ void insert() {
     else {
         scanf("%d:%d", &linepose, &charpose) ;
     }
+    undofunc(completename) ;
     FILE *myfile ;
     myfile = fopen(completename, "r") ;
     if(!myfile) {
@@ -429,6 +467,7 @@ void removestr() {
         return ;
     if((direction = Flag(2)) == 0)
         return ;
+    undofunc(completename) ;
     if(removefunc(completename, linepose, charpose, rmsize, direction))
         printf("removed string from file successfuly!\n") ;
 }
@@ -626,6 +665,7 @@ void pastestr() {
         c = fgetc(myfile) ;
     }
     fclose(myfile) ;
+    undofunc(completename) ;
     myfile = fopen(completename, "w") ;
     fprintf(myfile, "%s", before) ;
     write_str(myfile, clipboard) ;
@@ -732,6 +772,61 @@ void compare() {
     }
 }
 
+void undo() {
+    char completename[100] = {0}, undocompletename[100] = {0}, c ;
+    int i ;
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+        strcpy(undocompletename, completename) ;
+        memcpy(undocompletename, "undo/", 5) ;
+    }
+    //printf("%s\n", completename) ;
+    //printf("%s\n", undocompletename) ;
+    FILE *currentfile ;
+    FILE *tempfile ;
+    FILE *oldfile ;
+    currentfile = fopen(completename, "r") ;
+    if(!currentfile) {
+        printf("file doesn't exist\n") ;
+        fclose(currentfile) ;
+        return ;
+    }
+    tempfile = fopen("temp.txt", "w") ;
+    c = fgetc(currentfile) ;
+    while(!feof(currentfile)) {
+        fputc(c, tempfile) ;
+        c = fgetc(currentfile) ;
+    }
+    fclose(currentfile) ;
+    fclose(tempfile) ;
+    currentfile = fopen(completename, "w") ;
+    oldfile = fopen(undocompletename, "r") ;
+    c = fgetc(oldfile) ;
+    while(!feof(oldfile)) {
+        fputc(c, currentfile) ;
+        c = fgetc(oldfile) ;
+    }
+    fclose(currentfile) ;
+    fclose(oldfile) ;
+    oldfile = fopen(undocompletename, "w") ;
+    tempfile = fopen("temp.txt", "r") ;
+    c = fgetc(tempfile) ;
+    while(!feof(tempfile)) {
+        fputc(c, oldfile) ;
+        c = fgetc(tempfile) ;
+    }
+    fclose(oldfile) ;
+    fclose(tempfile) ;
+    printf("undo successfuly\n") ;
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -753,6 +848,8 @@ int main () {
             pastestr() ;
         else if(!strcmp(command, "compare"))
             compare() ;
+        else if(!strcmp(command, "undo"))
+            undo() ;
         else if(!strcmp(command, "exit")) 
             break ;
         else {
