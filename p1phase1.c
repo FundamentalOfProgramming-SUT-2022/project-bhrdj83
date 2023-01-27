@@ -764,7 +764,7 @@ void compare() {
         while(!feof(file2)) {
             fgets(line2, 1000, file2) ;
             printf("%s", line2) ;
-            memset(line2, 1000, sizeof(line2)) ;
+            memset(line2, 0, sizeof(line2)) ;
             //fgets(line2, 1000, file2) ;
         }
         printf("\n") ;
@@ -827,6 +827,90 @@ void undo() {
     printf("undo successfuly\n") ;
 }
 
+void find() {
+    char completename[100] = {0}, strin[1000] = {0}, str[1000] = {0}, c ;
+    if(invalid_command(2))
+        return ;
+    else {
+        if((c = str_space()) == '\"'){
+            getstr_withspace(strin) ;
+        }
+        else {
+            strin[0] = c ;
+            getstr(strin, 1) ;
+        }
+    }
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    int i = 0, j = 0 ;
+    while(strin[i] != 0) {
+        if(strin[i] == '\\') {
+            i++ ;
+            if(strin[i] == 'n')
+                str[j] = '\n' ;
+            else if(str[i] == '\"')
+                str[j] = '\"' ;
+            else if(str[i] == '*')
+                str[j] = '*' ;
+            else
+                str[j] = '\\' ;
+        }
+        /*else if(strin[i] == '*') {
+            if(i == 0)
+            /wildbefore(completename, strin) ;
+            else
+                wildafter(completename, str) ;
+            return ;
+        }*/
+        else
+            str[j] = strin[i] ;
+        i++ ;
+        j++ ;
+    }
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist\n") ;
+        fclose(myfile) ;
+        return ;
+    }
+    int charcounter = 1, firstnum ;
+    c = fgetc(myfile) ;
+    int flag = 0 ;
+    while(!feof(myfile)) {
+        if(c == str[0]) {
+            flag = 1 ;
+            firstnum = charcounter ;
+            for(i = 0 ; i < strlen(str) ; i++) {
+                if(c != str[i] || feof(myfile)) {
+                    flag = 0 ;
+                    break ;
+                }
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            if(flag == 1) {
+                printf("string starts at character number %d\n", firstnum) ;
+                return ;
+            }
+        }
+        else {
+            c = fgetc(myfile) ;
+            charcounter++ ;
+        }
+    }
+    printf("couldn't find the string\n") ;
+
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -848,6 +932,8 @@ int main () {
             pastestr() ;
         else if(!strcmp(command, "compare"))
             compare() ;
+        else if(!strcmp(command, "find"))
+            find() ;
         else if(!strcmp(command, "undo"))
             undo() ;
         else if(!strcmp(command, "exit")) 
