@@ -842,8 +842,9 @@ void undo() {
 }
 
 void wildcard(char *completename, char *strin, char *before, int i) {
-    char after[1000] = {0}, c, cprev = 1 ;
+    char after[1000] = {0}, c, cprev = 1, option[100] = {0} ;
     int j = 0, charcounter, firstnum, flag ;
+    int atop = 0, allop = 0, countop = 0, bywordop = 0, timesfound, atnum, wordfirstnum, wordcounter ;
     while(strin[i] != 0) {
         if(strin[i] == '\\') {
             i++ ;
@@ -861,6 +862,26 @@ void wildcard(char *completename, char *strin, char *before, int i) {
         i++ ;
         j++ ;
     }
+    c = getchar() ;
+    while(c != '\n') {
+        memset(option, 0, 100) ;
+        scanf("%s", option) ;
+        if(!strcmp(option, "-count"))
+            countop = 1 ;
+        else if(!strcmp(option, "-at")) {
+            atop = 1 ;
+            scanf("%d", &atnum) ;
+        }
+        else if(!strcmp(option, "-all"))
+            allop = 1 ;
+        else if(!strcmp(option, "-byword"))
+            bywordop = 1 ;
+        else {
+            printf("invalid command\n") ;
+            return ;
+        }
+        c = getchar() ;
+    }
     FILE *myfile ;
     myfile = fopen(completename, "r") ;
     if(!myfile) {
@@ -868,7 +889,8 @@ void wildcard(char *completename, char *strin, char *before, int i) {
         fclose(myfile) ;
         return ;
     }
-    /*if(strlen(after) == 0) {
+    if(countop == 0 && atop == 0 && allop == 0 && bywordop == 0) {
+    if(strlen(after) == 0) {
         charcounter = 1 ;
         c = fgetc(myfile) ;
         flag = 0 ;
@@ -902,7 +924,7 @@ void wildcard(char *completename, char *strin, char *before, int i) {
         c = fgetc(myfile) ;
         flag = 0 ;
         while(!feof(myfile)) {
-            if(c == ' ' || c == '\n') {
+            if(c == ' ') {
                 wordfirstchar = charcounter + 1 ;
                 cprev = c ;
                 c = fgetc(myfile) ;
@@ -931,14 +953,14 @@ void wildcard(char *completename, char *strin, char *before, int i) {
             }
         }
         printf("couldn't find the string\n") ;
-    }*/
+    }
     else {
         int flag1 = 0, flag2 = 0 ;
         charcounter = 1 ;
         c = fgetc(myfile) ;
         while(!feof(myfile)) {
             flag1 = 0 ;
-            if(c == before[0] || strlen(before) == 0) {
+            if(c == before[0]) {
                 flag1 = 1 ;
                 firstnum = charcounter ;
                 for(i = 0 ; i < strlen(before) ; i++) {
@@ -950,7 +972,6 @@ void wildcard(char *completename, char *strin, char *before, int i) {
                     charcounter++ ;
                 }
                 if(flag1 == 1) {
-                    flag2 = 1 ;
                     while(!feof(myfile)) {
                         flag2 = 0 ;
                         if(c == ' ' || c == '\0') {
@@ -958,7 +979,7 @@ void wildcard(char *completename, char *strin, char *before, int i) {
                         charcounter++ ;
                         break ;
                         }
-                        else if(c == after[0] || strlen(after) == 0) {
+                        else if(c == after[0]) {
                             flag2 = 1 ;
                             for(i = 0 ; i < strlen(after) ; i++) {
                             if(c != after[i] || feof(myfile)) {
@@ -991,11 +1012,890 @@ void wildcard(char *completename, char *strin, char *before, int i) {
         }
         printf("couldn't find the string\n") ;
     }
+    }
+    else if(countop == 1 && atop == 0 && allop == 0 && bywordop == 0) {
+    timesfound = 0 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(after) ; i++) {
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    continue ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        continue ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+    }
+    printf("string appeared %d times\n", timesfound) ;
+    }
+    else if(countop == 0 && atop == 1 && allop == 0 && bywordop == 0) {
+    timesfound = 0 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        printf("string starts at character number %d\n", firstnum) ;
+                        return ;
+                    }
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("-1\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(after) ; i++) {
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        printf("string starts at character number %d\n", wordfirstchar) ;
+                        return ;
+                    }
+                    continue ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("-1\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        if(timesfound == atnum) {
+                            printf("string starts at character number %d\n", firstnum) ;
+                            return ;
+                        }
+                        continue ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("-1\n") ;
+    }
+    }
+    else if(countop == 0 && atop == 0 && allop == 1 && bywordop == 0) {
+    timesfound = 0 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    if(timesfound == 1)
+                        printf("%d", firstnum) ;
+                    else
+                        printf(", %d", firstnum) ;
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound == 0)
+            printf("couldn't find the string\n") ;        
+        else
+            printf("\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(after) ; i++) {
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == 1)
+                        printf("%d", wordfirstchar) ;
+                    else
+                        printf(", %d", wordfirstchar) ;
+                    continue ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound == 0)
+            printf("couldn't find the string\n") ;        
+        else
+            printf("\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        if(timesfound == 1)
+                            printf("%d", firstnum) ;
+                        else
+                            printf(", %d", firstnum) ;
+                        continue ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound == 0)
+            printf("couldn't find the string\n") ;        
+        else
+            printf("\n") ;
+    }
+    }
+    else if(countop == 0 && atop == 0 && allop == 0 && bywordop == 1) {
+    wordcounter = 1 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ')
+                wordcounter++ ;
+            if(c == before[0]) {
+                flag = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    printf("string starts at word number %d\n", wordfirstnum) ;
+                    return ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordcounter++ ;
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(after) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    printf("string starts at word number %d\n", wordfirstnum) ;
+                    return ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == ' ')
+                wordcounter++ ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        printf("string starts at word number %d\n", wordfirstnum) ;
+                        return ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    }
+    else if(countop == 0 && atop == 1 && allop == 0 && bywordop == 1) {
+    timesfound = 0 ;
+    wordcounter = 1 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ')
+                wordcounter++ ;
+            if(c == before[0]) {
+                flag = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        printf("string starts at word number %d\n", wordfirstnum) ;
+                        return ;
+                    }
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordcounter++ ;
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(after) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        printf("string starts at word number %d\n", wordfirstnum) ;
+                        return ;
+                    }
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == ' ')
+                wordcounter++ ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                wordfirstnum = wordcounter ;
+                c - fgetc(myfile) ;
+                charcounter++ ;
+                firstnum = charcounter ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        if(c == ' ')
+                            wordcounter++ ;
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            for(i = 1 ; i < strlen(after) ; i++) {
+                            if(c == ' ')
+                                wordcounter++ ;
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        printf("string starts at word number %d\n", wordfirstnum) ;
+                        return ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    }
+    else if(countop == 0 && atop == 0 && allop == 1 && bywordop == 1) {
+    timesfound = 0 ;
+    wordcounter = 1 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ')
+                wordcounter++ ;
+            if(c == before[0]) {
+                flag = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    if(timesfound == 1)
+                        printf("%d", wordfirstnum) ;
+                    else
+                        printf(", %d", wordfirstnum) ;
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound == 0)
+            printf("couldn't find the string\n") ;        
+        else
+            printf("\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordcounter++ ;
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(after) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == 1)
+                        printf("%d", wordfirstnum) ;
+                    else
+                        printf(", %d", wordfirstnum) ;
+                    continue ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound == 0)
+            printf("couldn't find the string\n") ;        
+        else
+            printf("\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == ' ')
+                wordcounter++ ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        if(c == ' ')
+                            wordcounter++ ;
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            for(i = 1 ; i < strlen(after) ; i++) {
+                            if(c == ' ')
+                                wordcounter++ ;
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        if(timesfound == 1)
+                            printf("%d", wordfirstnum) ;
+                        else
+                            printf(", %d", wordfirstnum) ;
+                        continue ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound == 0)
+            printf("couldn't find the string\n") ;        
+        else
+            printf("\n") ;
+    }
+    }
 }
 
 void find() {
     char completename[100] = {0}, strin[1000] = {0}, before[1000] = {0}, after[1000] = {0}, c, option[100] = {0} ;
-    int atop = 0, allop = 0, countop = 0, bywordop = 0, charcounter, firstnum, timesfound, atnum, wordfirstnum ;
+    int atop = 0, allop = 0, countop = 0, bywordop = 0, charcounter, firstnum, timesfound, atnum, wordfirstnum, wordcounter ;
     if(invalid_command(2))
         return ;
     else {
@@ -1187,22 +2087,27 @@ void find() {
                 charcounter++ ;
             }
         }
-        if(flag == 0)
+        if(timesfound == 0)
             printf("couldn't find the string\n") ;
         else 
             printf("\n") ;
     }
     else if(countop == 0 && atop == 0 && allop == 0 && bywordop == 1) {
         charcounter = 1 ;
-        wordfirstnum = 1 ;
+        wordcounter = 1 ;
         c = fgetc(myfile) ;
         int flag = 0 ;
         while(!feof(myfile)) {
             if(c == ' ')
-                wordfirstnum++ ;
+                wordcounter++ ;
             if(c == before[0]) {
                 flag = 1 ;
-                for(i = 0 ; i < strlen(before) ; i++) {
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
                     if(c != before[i] || feof(myfile)) {
                         flag = 0 ;
                         break ;
@@ -1224,16 +2129,21 @@ void find() {
     }
     else if(countop == 0 && atop == 1 && allop == 0 && bywordop == 1) {
         charcounter = 1 ;
-        wordfirstnum = 1 ;
+        wordcounter = 1 ;
         timesfound = 0 ;
         c = fgetc(myfile) ;
         int flag = 0 ;
         while(!feof(myfile)) {
             if(c == ' ')
-                wordfirstnum++ ;
+                wordcounter++ ;
             if(c == before[0]) {
                 flag = 1 ;
-                for(i = 0 ; i < strlen(before) ; i++) {
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
                     if(c != before[i] || feof(myfile)) {
                         flag = 0 ;
                         break ;
@@ -1260,16 +2170,21 @@ void find() {
     }
     else if(countop == 0 && atop == 0 && allop == 1 && bywordop == 1) {
         charcounter = 1 ;
-        wordfirstnum = 1 ;
+        wordcounter = 1 ;
         timesfound = 0 ;
         c = fgetc(myfile) ;
         int flag = 0 ;
         while(!feof(myfile)) {
             if(c == ' ')
-                wordfirstnum++ ;
+                wordcounter++ ;
             if(c == before[0]) {
                 flag = 1 ;
-                for(i = 0 ; i < strlen(before) ; i++) {
+                wordfirstnum = wordcounter ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+                for(i = 1 ; i < strlen(before) ; i++) {
+                    if(c == ' ')
+                        wordcounter++ ;
                     if(c != before[i] || feof(myfile)) {
                         flag = 0 ;
                         break ;
@@ -1291,7 +2206,7 @@ void find() {
                 charcounter++ ;
             }
         }
-        if(flag == 0)
+        if(timesfound == 0)
             printf("couldn't find the string\n") ;
         else 
             printf("\n") ;
