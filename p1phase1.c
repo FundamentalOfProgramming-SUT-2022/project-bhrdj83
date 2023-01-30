@@ -7,6 +7,18 @@ char *clipboard ;
 
 void getstr(char *dest, int n) {
     scanf("%s", dest + n) ;
+    //printf("%s\n", dest) ;
+}
+
+void getstring(char *dest, int n) {
+    char c ;
+    int i = n ;
+    scanf("%c", &c) ;
+    while(c != ' ') {
+        dest[i] = c ;
+        i++ ;
+        scanf("%c", &c) ;
+    }
 }
 
 void getname_withspace(char *dest) {
@@ -35,6 +47,7 @@ void getstr_withspace(char *dest) {
 int invalid_command(int mode) {
     int v ;
     char fileatr[100] = {0} ;
+    //getchar() ;
     getstr(fileatr, 0) ;
     switch(mode) {
         case 1 :
@@ -47,6 +60,7 @@ int invalid_command(int mode) {
             v = strcmp(fileatr, "--pos") ;
             break ;
     }
+    //printf("%s\n", fileatr) ;
     if(v){
         printf("invalid command\n") ;
         char c ;
@@ -302,7 +316,7 @@ void insert() {
         }
         else {
             str[0] = c ;
-            getstr(str, 1) ;
+            getstring(str, 1) ;
         }
     }
     if(invalid_command(3))
@@ -854,7 +868,7 @@ void wildcard(char *completename, char *strin, char *before, int i) {
         fclose(myfile) ;
         return ;
     }
-    if(strlen(after) == 0) {
+    /*if(strlen(after) == 0) {
         charcounter = 1 ;
         c = fgetc(myfile) ;
         flag = 0 ;
@@ -917,14 +931,14 @@ void wildcard(char *completename, char *strin, char *before, int i) {
             }
         }
         printf("couldn't find the string\n") ;
-    }
+    }*/
     else {
         int flag1 = 0, flag2 = 0 ;
         charcounter = 1 ;
         c = fgetc(myfile) ;
         while(!feof(myfile)) {
             flag1 = 0 ;
-            if(c == before[0]) {
+            if(c == before[0] || strlen(before) == 0) {
                 flag1 = 1 ;
                 firstnum = charcounter ;
                 for(i = 0 ; i < strlen(before) ; i++) {
@@ -936,6 +950,7 @@ void wildcard(char *completename, char *strin, char *before, int i) {
                     charcounter++ ;
                 }
                 if(flag1 == 1) {
+                    flag2 = 1 ;
                     while(!feof(myfile)) {
                         flag2 = 0 ;
                         if(c == ' ' || c == '\0') {
@@ -943,7 +958,7 @@ void wildcard(char *completename, char *strin, char *before, int i) {
                         charcounter++ ;
                         break ;
                         }
-                        else if(c == after[0]) {
+                        else if(c == after[0] || strlen(after) == 0) {
                             flag2 = 1 ;
                             for(i = 0 ; i < strlen(after) ; i++) {
                             if(c != after[i] || feof(myfile)) {
@@ -979,7 +994,8 @@ void wildcard(char *completename, char *strin, char *before, int i) {
 }
 
 void find() {
-    char completename[100] = {0}, strin[1000] = {0}, before[1000] = {0}, after[1000] = {0}, c ;
+    char completename[100] = {0}, strin[1000] = {0}, before[1000] = {0}, after[1000] = {0}, c, option[100] = {0} ;
+    int atop = 0, allop = 0, countop = 0, bywordop = 0, charcounter, firstnum, timesfound, atnum, wordfirstnum ;
     if(invalid_command(2))
         return ;
     else {
@@ -988,9 +1004,10 @@ void find() {
         }
         else {
             strin[0] = c ;
-            getstr(strin, 1) ;
+            getstring(strin, 1) ;
         }
     }
+    //printf("%s\n", strin) ;
     if(invalid_command(1)) 
         return ;
     else {
@@ -1023,6 +1040,26 @@ void find() {
         i++ ;
         j++ ;
     }
+    c = getchar() ;
+    while(c != '\n') {
+        memset(option, 0, 100) ;
+        scanf("%s", option) ;
+        if(!strcmp(option, "-count"))
+            countop = 1 ;
+        else if(!strcmp(option, "-at")) {
+            atop = 1 ;
+            scanf("%d", &atnum) ;
+        }
+        else if(!strcmp(option, "-all"))
+            allop = 1 ;
+        else if(!strcmp(option, "-byword"))
+            bywordop = 1 ;
+        else {
+            printf("invalid command\n") ;
+            return ;
+        }
+        c = getchar() ;
+    }
     FILE *myfile ;
     myfile = fopen(completename, "r") ;
     if(!myfile) {
@@ -1030,7 +1067,8 @@ void find() {
         fclose(myfile) ;
         return ;
     }
-    int charcounter = 1, firstnum ;
+    if(countop == 0 && atop == 0 && allop == 0 && bywordop == 0) {
+    charcounter = 1 ;
     c = fgetc(myfile) ;
     int flag = 0 ;
     while(!feof(myfile)) {
@@ -1056,7 +1094,210 @@ void find() {
         }
     }
     printf("couldn't find the string\n") ;
-
+    }
+    else if(countop == 1 && atop == 0 && allop == 0 && bywordop == 0) {
+        timesfound = 0  ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        c = fgetc(myfile) ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    //c = fgetc(myfile) ;
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+            }
+        }
+        printf("string appeard in file %d times\n", timesfound) ;
+    } 
+    else if(countop == 0 && atop == 1 && allop == 0 && bywordop == 0) {
+        charcounter = 1 ;
+        timesfound = 0 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        printf("string starts at character number %d\n", firstnum) ;
+                        return ;
+                    }
+                    else
+                        continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("-1\n") ;
+    }
+    else if(countop == 0 && atop == 0 && allop == 1 && bywordop == 0) {
+        charcounter = 1 ;
+        timesfound = 0 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == 1)
+                        printf("%d", firstnum) ;
+                    else    
+                        printf(", %d", firstnum) ;
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(flag == 0)
+            printf("couldn't find the string\n") ;
+        else 
+            printf("\n") ;
+    }
+    else if(countop == 0 && atop == 0 && allop == 0 && bywordop == 1) {
+        charcounter = 1 ;
+        wordfirstnum = 1 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ')
+                wordfirstnum++ ;
+            if(c == before[0]) {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    printf("string starts at word number %d\n", wordfirstnum) ;
+                    return ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("couldn't find the string\n") ;
+    }
+    else if(countop == 0 && atop == 1 && allop == 0 && bywordop == 1) {
+        charcounter = 1 ;
+        wordfirstnum = 1 ;
+        timesfound = 0 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ')
+                wordfirstnum++ ;
+            if(c == before[0]) {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        printf("string starts at word number %d\n", wordfirstnum) ;
+                        return ;
+                    }
+                    else
+                        continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        printf("-1\n") ;
+    }
+    else if(countop == 0 && atop == 0 && allop == 1 && bywordop == 1) {
+        charcounter = 1 ;
+        wordfirstnum = 1 ;
+        timesfound = 0 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ')
+                wordfirstnum++ ;
+            if(c == before[0]) {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == 1)
+                        printf("%d", wordfirstnum) ;
+                    else    
+                        printf(", %d", wordfirstnum) ;
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(flag == 0)
+            printf("couldn't find the string\n") ;
+        else 
+            printf("\n") ;
+    }
+    else
+        printf("wrong combination of attributes\n") ;
 }
 
 int main () {
