@@ -59,10 +59,16 @@ int invalid_command(int mode) {
         case 3 :
             v = strcmp(fileatr, "--pos") ;
             break ;
+        case 4 :
+            v = strcmp(fileatr, "--str1") ;
+            break ;
+        case 5 :
+            v = strcmp(fileatr, "--str2") ;
+            break ;
     }
-    //printf("%s\n", fileatr) ;
     if(v){
         printf("invalid command\n") ;
+        //printf("%s\n", fileatr) ;
         char c ;
         while((c = getchar()) != '\n') ;
         return 1 ;
@@ -1924,9 +1930,9 @@ void find() {
             i++ ;
             if(strin[i] == 'n')
                 before[j] = '\n' ;
-            else if(before[i] == '\"')
+            else if(strin[i] == '\"')
                 before[j] = '\"' ;
-            else if(before[i] == '*')
+            else if(strin[i] == '*')
                 before[j] = '*' ;
             else
                 before[j] = '\\' ;
@@ -2215,6 +2221,948 @@ void find() {
         printf("wrong combination of attributes\n") ;
 }
 
+void replacewildcard(char *completename, char *strin, char *before, int i, char *str2) {
+    char after[1000] = {0}, c, cprev = 1, option[100] = {0} ;
+    char *filebefore = (char*)calloc(1000000, sizeof(char)) ;
+    char *fileafter = (char*)calloc(1000000, sizeof(char)) ;
+    int j = 0, charcounter, firstnum, flag ;
+    int atop = 0, allop = 0, timesfound, atnum, wordfirstnum, wordcounter ;
+    while(strin[i] != 0) {
+        if(strin[i] == '\\') {
+            i++ ;
+            if(strin[i] == 'n')
+                after[j] = '\n' ;
+            else if(after[i] == '\"')
+                after[j] = '\"' ;
+            else if(after[i] == '*')
+                after[j] = '*' ;
+            else
+                after[j] = '\\' ;
+        }
+        else
+            after[j] = strin[i] ;
+        i++ ;
+        j++ ;
+    }
+    c = getchar() ;
+    while(c != '\n') {
+        memset(option, 0, 100) ;
+        scanf("%s", option) ;
+        if(!strcmp(option, "-at")) {
+            atop = 1 ;
+            scanf("%d", &atnum) ;
+        }
+        else if(!strcmp(option, "-all"))
+            allop = 1 ;
+        else {
+            printf("invalid command\n") ;
+            return ;
+        }
+        c = getchar() ;
+    }
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist\n") ;
+        fclose(myfile) ;
+        return ;
+    }
+    if(atop == 1 && allop == 1) {
+        printf("wrong combination of attributes\n") ;
+        return ;
+    }
+    else if(allop == 1) {
+    undofunc(completename) ;
+    timesfound = 0 ;
+    if(strlen(after) == 0) {
+        while(1) {
+        timesfound = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    break ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != 1) {
+            break ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        c = fgetc(myfile) ;
+        while(c != ' ' && !feof(myfile)) {
+            c = fgetc(myfile) ;
+        }
+        i = 0 ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            //printf("%c", fileafter[i]) ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        memset(filebefore, 0, 1000000) ;
+        memset(fileafter, 0, 1000000) ;
+        }
+        printf("file updated successfuly\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar ;
+        while(1) {
+        timesfound = 0 ;
+        wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(after) ; i++) {
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    break ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != 1) {
+            break ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < wordfirstchar - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        for(i = wordfirstchar ; i < charcounter ; i++)
+            c = fgetc(myfile) ;
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        memset(filebefore, 0, 1000000) ;
+        memset(fileafter, 0, 1000000) ;
+        }
+        printf("file updated successfuly\n") ;
+    }
+    else {
+        int flag1, flag2 ;
+        while(1) {
+        flag1 = 0 ;
+        flag2 = 0 ;
+        timesfound = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        break ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != 1) {
+            break ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        for(i = firstnum ; i < charcounter ; i++) {
+            c = fgetc(myfile) ;
+        }
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        memset(filebefore, 0, 1000000) ;
+        memset(fileafter, 0, 1000000) ;
+        }
+        printf("file updated successfuly\n") ;
+    }
+    }
+    else if(atop == 1) {
+    undofunc(completename) ;
+    timesfound = 0 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        break ;
+                    }
+                    continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != atnum) {
+            printf("coundn't find the string\n") ;
+            return ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        c = fgetc(myfile) ;
+        while(c != ' ' && !feof(myfile)) {
+            c = fgetc(myfile) ;
+        }
+        i = 0 ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            //printf("%c", fileafter[i]) ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(after) ; i++) {
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        break ;
+                    }
+                    continue ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != atnum) {
+            printf("couldn't find the string\n") ;
+            return ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < wordfirstchar - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        for(i = wordfirstchar ; i < charcounter ; i++)
+            c = fgetc(myfile) ;
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        if(timesfound == atnum) {
+                            break ;
+                        }
+                        continue ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != atnum) {
+            printf("couldn't find the string\n") ;
+            return ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        for(i = firstnum ; i < charcounter ; i++) {
+            c = fgetc(myfile) ;
+        }
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    }
+    else {
+    undofunc(completename) ;
+    timesfound = 0 ;
+    if(strlen(after) == 0) {
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == before[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1 && c != ' ' && c != EOF && c != '\0') {
+                    timesfound++ ;
+                    break ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != 1) {
+            printf("coundn't find the string\n") ;
+            return ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        c = fgetc(myfile) ;
+        while(c != ' ' && !feof(myfile)) {
+            c = fgetc(myfile) ;
+        }
+        i = 0 ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            //printf("%c", fileafter[i]) ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    else if(strlen(before) == 0) {
+        int wordfirstchar = 1 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == ' ') {
+                wordfirstchar = charcounter + 1 ;
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+            else if(c == after[0] && cprev != ' ' && cprev != EOF && cprev != '\0') {
+                flag = 1 ;
+                for(i = 0 ; i < strlen(after) ; i++) {
+                    if(c != after[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    cprev = c ;
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    break ;
+                }
+            }
+            else {
+                cprev = c ;
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != 1) {
+            printf("couldn't find the string\n") ;
+            return ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < wordfirstchar - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        for(i = wordfirstchar ; i < charcounter ; i++)
+            c = fgetc(myfile) ;
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    else {
+        int flag1 = 0, flag2 = 0 ;
+        charcounter = 1 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            flag1 = 0 ;
+            if(c == before[0]) {
+                flag1 = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(before) ; i++) {
+                    if(c != before[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag1 == 1) {
+                    while(!feof(myfile)) {
+                        flag2 = 0 ;
+                        if(c == ' ' || c == '\0') {
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                        break ;
+                        }
+                        else if(c == after[0]) {
+                            flag2 = 1 ;
+                            for(i = 0 ; i < strlen(after) ; i++) {
+                            if(c != after[i] || feof(myfile)) {
+                                flag2 = 0 ;
+                                break ;
+                            }
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                            }
+                            if(flag2 == 1) {
+                                break ;
+                            }
+                        }
+                        else {
+                            cprev = c ;
+                            c = fgetc(myfile) ;
+                            charcounter++ ;
+                        }
+                    } 
+                    if (flag2 == 1) {
+                        timesfound++ ;
+                        break ;
+                    }       
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        if(timesfound != 1) {
+            printf("couldn't find the string\n") ;
+            return ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            filebefore[i] = fgetc(myfile) ;
+        }
+        for(i = firstnum ; i < charcounter ; i++) {
+            c = fgetc(myfile) ;
+        }
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            fileafter[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", filebefore) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", fileafter) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    }
+}
+
+void replace() {
+    char completename[100] = {0}, str1[1000] = {0}, str1out[1000] = {0}, str2[1000] = {0}, c, option[100] = {0} ;
+    char *before = (char*)calloc(1000000, sizeof(char)) ;
+    char *after = (char*)calloc(1000000, sizeof(char)) ;
+    int atop = 0, allop = 0, charcounter, firstnum, timesfound, atnum, wordfirstnum, wordcounter ;
+    if(invalid_command(4))
+        return ;
+    else {
+        if((c = str_space()) == '\"'){
+            getstr_withspace(str1) ;
+        }
+        else {
+            str1[0] = c ;
+            getstring(str1, 1) ;
+        }
+    }
+    if(invalid_command(5))
+        return ;
+    else {
+        if((c = str_space()) == '\"'){
+            getstr_withspace(str2) ;
+        }
+        else {
+            str2[0] = c ;
+            getstring(str2, 1) ;
+        }
+    }
+    if(invalid_command(1)) 
+        return ;
+    else {
+        if(iswithspace()) 
+            getname_withspace(completename) ;
+        else{
+            strcpy(completename, "root/") ;
+            getstr(completename, 5) ;
+        }
+    }
+    int i = 0, j = 0 ;
+    while(str1[i] != 0) {
+        if(str1[i] == '\\') {
+            i++ ;
+            if(str1[i] == 'n')
+                str1out[j] = '\n' ;
+            else if(str1[i] == '\"')
+                str1out[j] = '\"' ;
+            else if(str1[i] == '*')
+                str1out[j] = '*' ;
+            else
+                str1out[j] = '\\' ;
+        }
+        else if(str1[i] == '*') {
+            replacewildcard(completename, str1, str1out, ++i, str2) ;
+            return ;
+        }
+        else
+            str1out[j] = str1[i] ;
+        i++ ;
+        j++ ;
+    }
+    c = getchar() ;
+    while(c != '\n') {
+        memset(option, 0, 100) ;
+        scanf("%s", option) ;
+        if(!strcmp(option, "-at")) {
+            atop = 1 ;
+            scanf("%d", &atnum) ;
+        }
+        else if(!strcmp(option, "-all"))
+            allop = 1 ;
+        else {
+            printf("invalid command\n") ;
+            return ;
+        }
+        c = getchar() ;
+    }
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist\n") ;
+        fclose(myfile) ;
+        return ;
+    }
+    if(atop == 1 && allop == 1) {
+        printf("wrong combination of attributes\n") ;
+        return ;
+    }
+    else if(allop == 1) {
+        undofunc(completename) ;
+        int flag ;
+        while(1) {
+            charcounter = 1 ;
+            timesfound = 0 ;
+            c = fgetc(myfile) ;
+            flag = 0 ;
+            while(!feof(myfile)) {
+                if(c == str1out[0]) {
+                    flag = 1 ;
+                    firstnum = charcounter ;
+                    for(i = 0 ; i < strlen(str1out) ; i++) {
+                        if(c != str1out[i] || feof(myfile)) {
+                            flag = 0 ;
+                            break ;
+                        }
+                        c = fgetc(myfile) ;
+                        charcounter++ ;
+                    }
+                    if(flag == 1) {
+                        timesfound++ ;
+                        break ;
+                    }
+                }
+                else {
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+            }
+            fclose(myfile) ;
+            if(timesfound == 0) {
+                printf("file updated successfuly\n") ;
+                return ;
+            }
+            myfile = fopen(completename, "r") ;
+            for(i = 0 ; i < firstnum - 1 ; i++) {
+                before[i] = fgetc(myfile) ;
+            }
+            for(i = 0 ; i < strlen(str1out) ; i++)
+                c = fgetc(myfile) ;
+            i = 0 ;
+            c = fgetc(myfile) ;
+            while(!feof(myfile)) {
+                after[i] = c ;
+                i++ ;
+                c = fgetc(myfile) ;
+            }
+            fclose(myfile) ;
+            myfile = fopen(completename, "w") ;
+            fprintf(myfile, "%s", before) ;
+            write_str(myfile, str2) ;
+            fprintf(myfile, "%s", after) ;
+            fclose(myfile) ;
+            myfile = fopen(completename, "r") ;
+            memset(before, 0, 1000000) ;
+            memset(after, 0, 1000000) ;
+        }
+    }
+    else if(atop == 1) {
+        charcounter = 1 ;
+        timesfound = 0 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == str1out[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(str1out) ; i++) {
+                    if(c != str1out[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    if(timesfound == atnum) {
+                        //printf("string starts at character number %d\n", firstnum) ;
+                        break ;
+                    }
+                    else
+                        continue ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        fclose(myfile) ;
+        if(timesfound != atnum) {
+            printf("couldn't find the string\n") ;
+            return ;
+        }
+        undofunc(completename) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            before[i] = fgetc(myfile) ;
+        }
+        for(i = 0 ; i < strlen(str1out) ; i++)
+            c = fgetc(myfile) ;
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            after[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", before) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", after) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+    else {
+        charcounter = 1 ;
+        timesfound = 0 ;
+        c = fgetc(myfile) ;
+        int flag = 0 ;
+        while(!feof(myfile)) {
+            if(c == str1out[0]) {
+                flag = 1 ;
+                firstnum = charcounter ;
+                for(i = 0 ; i < strlen(str1out) ; i++) {
+                    if(c != str1out[i] || feof(myfile)) {
+                        flag = 0 ;
+                        break ;
+                    }
+                    c = fgetc(myfile) ;
+                    charcounter++ ;
+                }
+                if(flag == 1) {
+                    timesfound++ ;
+                    break ;
+                }
+            }
+            else {
+                c = fgetc(myfile) ;
+                charcounter++ ;
+            }
+        }
+        fclose(myfile) ;
+        if(timesfound == 0) {
+            printf("couldn't find the string\n") ;
+            return ;
+        }
+        undofunc(completename) ;
+        myfile = fopen(completename, "r") ;
+        for(i = 0 ; i < firstnum - 1 ; i++) {
+            before[i] = fgetc(myfile) ;
+        }
+        for(i = 0 ; i < strlen(str1out) ; i++)
+            c = fgetc(myfile) ;
+        i = 0 ;
+        c = fgetc(myfile) ;
+        while(!feof(myfile)) {
+            after[i] = c ;
+            i++ ;
+            c = fgetc(myfile) ;
+        }
+        fclose(myfile) ;
+        myfile = fopen(completename, "w") ;
+        fprintf(myfile, "%s", before) ;
+        write_str(myfile, str2) ;
+        fprintf(myfile, "%s", after) ;
+        fclose(myfile) ;
+        printf("file updated successfuly\n") ;
+    }
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -2238,6 +3186,8 @@ int main () {
             compare() ;
         else if(!strcmp(command, "find"))
             find() ;
+        else if(!strcmp(command, "replace"))
+            replace() ;
         else if(!strcmp(command, "undo"))
             undo() ;
         else if(!strcmp(command, "exit")) 
