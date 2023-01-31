@@ -122,6 +122,22 @@ int iswithspace() {
         return 1 ;
 }
 
+int grepiswithspace() {
+    int i ;
+    char crstr[100] = {0} ;
+    
+    i = 0 ;
+    scanf("%c", &crstr[0]) ;
+    while(crstr[i] != '/') {
+        i++ ;
+        scanf("%c", &crstr[i]) ;
+    }
+    if(!(strcmp(crstr, "root/")))
+        return 0 ;
+    else
+        return 1 ;
+}
+
 char str_space() {
     char c ;
     getchar() ;
@@ -3163,6 +3179,167 @@ void replace() {
     }
 }
 
+void grep() {
+    char completename[100] = {0}, strin[1000] = {0}, attr[100] = {0}, c, str[1000] = {0}, line[1000] = {0} ;
+    int i, j, cattr = 0, lattr = 0, flag ;
+    FILE *myfile ;
+    scanf("%s", attr) ;
+    if (strcmp(attr, "--str")) {
+        if(!strcmp(attr, "-c"))
+            cattr = 1 ;
+        else
+            lattr = 1 ;
+        scanf("%s", attr) ;
+    }
+    if((c = str_space()) == '\"'){
+            getstr_withspace(strin) ;
+    }
+    else {
+        strin[0] = c ;
+        getstring(strin, 1) ;
+    }
+    i = 0 ;
+    j = 0 ;
+    while(strin[i] != 0) {
+        if(strin[i] == '\\') {
+            i++ ;
+            if(strin[i] == 'n')
+                str[j] = '\n' ;
+            else if(strin[i] == '\"')
+                str[j] = '\"' ;
+            else
+                str[j] = '\\' ;
+        }
+        else
+            str[j] = strin[i] ;
+        i++ ;
+        j++ ;
+    }
+    scanf("%s", attr) ;
+    if(cattr == 0 && lattr == 0) {
+        c = getchar() ;
+        while(c != '\n') {
+            //printf("%c\n", c) ;
+            memset(completename, 0, 100) ;
+            if(grepiswithspace()) 
+                getname_withspace(completename) ;
+            else{
+                strcpy(completename, "root/") ;
+                getstr(completename, 5) ;
+            }
+            //printf("%s\n", completename) ;
+            myfile = fopen(completename, "r") ;
+            while(!feof(myfile)) {
+                flag = 0 ;
+                memset(line, 0, 1000) ;
+                fgets(line, 1000, myfile) ;
+                for(j = 0 ; j < strlen(line) ; j++) {
+                    if(line[j] == str[0]) {
+                        flag = 1 ;
+                        for(i = 0 ; i < strlen(str) ; i++) {
+                            if(line[j] != str[i] || j >= strlen(line)) {
+                                flag = 0 ;
+                                //j++ ;
+                                break ;
+                            }
+                            j++ ;
+                        }
+                        if(flag == 1) {
+                            printf("%s : %s", completename, line) ;
+                            if(line[strlen(line) - 1] != '\n')
+                                printf("\n") ;
+                            break ;
+                        }
+                    }
+                }
+            }
+            c = getchar() ;
+        }
+
+    }
+    else if(cattr == 1) {
+        int timesfound = 0;
+        c = getchar() ;
+        while(c != '\n') {
+            //printf("%c\n", c) ;
+            memset(completename, 0, 100) ;
+            if(grepiswithspace()) 
+                getname_withspace(completename) ;
+            else{
+                strcpy(completename, "root/") ;
+                getstr(completename, 5) ;
+            }
+            //printf("%s\n", completename) ;
+            myfile = fopen(completename, "r") ;
+            while(!feof(myfile)) {
+                flag = 0 ;
+                memset(line, 0, 1000) ;
+                fgets(line, 1000, myfile) ;
+                for(j = 0 ; j < strlen(line) ; j++) {
+                    if(line[j] == str[0]) {
+                        flag = 1 ;
+                        for(i = 0 ; i < strlen(str) ; i++) {
+                            if(line[j] != str[i] || j >= strlen(line)) {
+                                flag = 0 ;
+                                //j++ ;
+                                break ;
+                            }
+                            j++ ;
+                        }
+                        if(flag == 1) {
+                            timesfound++ ;
+                            break ;
+                        }
+                    }
+                }
+            }
+            c = getchar() ;
+        }
+        printf("%d\n", timesfound) ;
+    }
+    else {
+        c = getchar() ;
+        while(c != '\n') {
+            //printf("%c\n", c) ;
+            memset(completename, 0, 100) ;
+            if(grepiswithspace()) 
+                getname_withspace(completename) ;
+            else{
+                strcpy(completename, "root/") ;
+                getstr(completename, 5) ;
+            }
+            //printf("%s\n", completename) ;
+            myfile = fopen(completename, "r") ;
+            while(!feof(myfile)) {
+                flag = 0 ;
+                memset(line, 0, 1000) ;
+                fgets(line, 1000, myfile) ;
+                for(j = 0 ; j < strlen(line) ; j++) {
+                    if(line[j] == str[0]) {
+                        flag = 1 ;
+                        for(i = 0 ; i < strlen(str) ; i++) {
+                            if(line[j] != str[i] || j >= strlen(line)) {
+                                flag = 0 ;
+                                //j++ ;
+                                break ;
+                            }
+                            j++ ;
+                        }
+                        if(flag == 1) {
+                            printf("%s\n", completename) ;
+                            break ;
+                        }
+                    }
+                }
+                if(flag == 1)
+                    break ;
+            }
+            c = getchar() ;
+        }
+    }
+
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -3188,6 +3365,8 @@ int main () {
             find() ;
         else if(!strcmp(command, "replace"))
             replace() ;
+        else if(!strcmp(command, "grep"))
+            grep() ;
         else if(!strcmp(command, "undo"))
             undo() ;
         else if(!strcmp(command, "exit")) 
