@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <conio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <dirent.h>
 
 char *clipboard ;
 
@@ -3340,6 +3344,56 @@ void grep() {
 
 }
 
+void treefunc(char *dirname, int depth) {
+    int i ;
+    char path[100] = "root/" ;
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(dirname);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if(!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, ".."))
+                continue ;
+            if(depth == 2 && dir->d_type == DT_DIR) {
+                printf("%s\n", dir->d_name) ;
+                memset(path, 0, 100) ;
+                strcat(path, "root/") ;
+                strcat(path, dir->d_name) ;
+                treefunc(path, 1) ;
+            }
+            else {
+                if(2 - depth)
+                    printf("|___%s\n", dir->d_name) ;
+                else
+                    printf("%s\n", dir->d_name);
+            }
+        }
+        closedir(d);
+    }
+}
+
+void tree() {
+    int depth ;
+    scanf("%d", &depth) ;
+    if (depth == 1) {
+        DIR *d;
+        struct dirent *dir;
+        d = opendir("root");
+        if (d) {
+            while ((dir = readdir(d)) != NULL) {
+                if(!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, ".."))
+                    continue ;
+                printf("%s\n", dir->d_name);
+            }
+            closedir(d);
+        }
+    }
+    else if(depth == 2)
+        treefunc("root", depth) ;
+    else
+        printf("invalid depth\n") ;
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -3367,6 +3421,8 @@ int main () {
             replace() ;
         else if(!strcmp(command, "grep"))
             grep() ;
+        else if(!strcmp(command, "tree"))
+            tree() ;
         else if(!strcmp(command, "undo"))
             undo() ;
         else if(!strcmp(command, "exit")) 
