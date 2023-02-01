@@ -3394,6 +3394,131 @@ void tree() {
         printf("invalid depth\n") ;
 }
 
+void auto_indent() {
+    char completename[100] = {0}, c ;
+    char *originfile = (char*)calloc(1000000, sizeof(char)) ;
+    char *modifile = (char*)calloc(1000000, sizeof(char)) ;
+    int i, j, k, indentcounter = 0 ;
+    if(iswithspace()) 
+        getname_withspace(completename) ;
+    else{
+        strcpy(completename, "root/") ;
+        getstr(completename, 5) ;
+    }
+    FILE *myfile ;
+    myfile = fopen(completename, "r") ;
+    if(!myfile) {
+        printf("file doesn't exist\n") ;
+        fclose(myfile) ;
+        return ;
+    }
+    undofunc(completename) ;
+    i = 0 ;
+    c = fgetc(myfile) ;
+    while(!feof(myfile)) {
+        originfile[i] = c ;
+        i++ ;
+        c = fgetc(myfile) ;
+    }
+    fclose(myfile) ;
+    //printf("%s\n", originfile) ;
+    j = 0 ;
+    for(i = 0 ; i < strlen(originfile) ; i++) {
+        if(originfile[i] == '{') {
+            indentcounter++ ;
+            if(i - 1 >= 0 && originfile[i - 1] != ' ' && originfile[i - 1] != '{') {
+                modifile[j] = ' ' ;
+                j++ ;
+            }
+            else {
+                while(j - 2 >= 0 && modifile[j - 2] == ' ') {
+                    j-- ;
+                    modifile[j] = 0 ;
+                }
+            }
+            modifile[j] = '{' ;
+            j++ ;
+            modifile[j] = '\n' ;
+            j++ ;
+            
+            while(originfile[i + 1] == ' ')
+                i++ ;
+            /*if(originfile[i + 1] == '}') {
+                i++ ;
+                indentcounter-- ;
+                for(k = 0 ; k < indentcounter ; k++) {
+                    modifile[j] = '\t' ;
+                    j++ ;
+                }
+                modifile[j] = '}' ;
+                j++ ;
+                modifile[j] = '\n' ;
+                j++ ;
+                for(k = 0 ; k < indentcounter ; k++) {
+                    modifile[j] = '\t' ;
+                    j++ ;
+                }
+                while(originfile[i + 1] == ' ')
+                    i++ ;
+            }*/
+            
+            for(k = 0 ; k < indentcounter ; k++) {
+                modifile[j] = '\t' ;
+                j++ ;
+            }
+            
+        }
+        else if(originfile[i] == '}') {
+            indentcounter-- ;
+            k = i - 1 ;
+            while(originfile[k] == ' ')
+                k-- ;
+            if(originfile[k] != '}' && originfile[k] != '{') {
+                modifile[j] = '\n' ;
+                j++ ;
+        
+            for(k = 0 ; k < indentcounter ; k++) {
+                modifile[j] = '\t' ;
+                j++ ;
+            }
+            
+            modifile[j] = '}' ;
+            j++ ;
+            modifile[j] = '\n' ;
+            j++ ;
+            //printf("%d\n", indentcounter) ;
+            for(k = 0 ; k < indentcounter ; k++) {
+                modifile[j] = '\t' ;
+                j++ ;
+            }
+            while(originfile[i + 1] == ' ')
+                i++ ;
+            }
+            else {
+                j-- ;
+                modifile[j] = '}' ;
+                j++ ;
+                modifile[j] = '\n' ;
+                j++ ;
+                for(k = 0 ; k < indentcounter ; k++) {
+                    modifile[j] = '\t' ;
+                    j++ ;
+                }
+                while(originfile[i + 1] == ' ')
+                    i++ ;
+            }
+        }
+        else{
+            modifile[j] = originfile[i] ;
+            j++ ;
+        }
+    }
+    myfile = fopen(completename, "w") ;
+    fprintf(myfile, "%s", modifile) ;
+    fclose(myfile) ;
+    printf("file updated successfuly\n") ;
+}
+
 int main () {
     char command[100] ;
     clipboard = (char*)calloc(1000000, sizeof(char)) ;
@@ -3423,6 +3548,8 @@ int main () {
             grep() ;
         else if(!strcmp(command, "tree"))
             tree() ;
+        else if(!strcmp(command, "auto-indent"))
+            auto_indent() ;
         else if(!strcmp(command, "undo"))
             undo() ;
         else if(!strcmp(command, "exit")) 
